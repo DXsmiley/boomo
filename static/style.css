@@ -43,3 +43,39 @@ p.subtle {
     margin: 0px 10px;
     padding: 6px;
 }
+
+div.mycards {
+    position: absolute;
+    bottom: 0px;
+    margin: 0px auto;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+div.mycards img {
+    position: relative;
+    margin: 0px -30px;
+    bottom: 0px;
+    transition: bottom 0.1s ease-out;
+}
+
+div.mycards img:hover {
+    bottom: 50px;
+}
+
+div.other-players {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+div.player-info {
+    display: inline-block;
+    margin: 0px 30px;
+}
+
+span.massive {
+    font-size: 25em;
+    color: #1796b8;
+    margin: 40px;
+}
