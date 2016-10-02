@@ -118,4 +118,22 @@ Game.prototype.playCard = function(player, card) {
     }
 };
 
+Game.prototype.getPlayerVision = function(player) {
+    var players = [];
+    for (var i in this.player_order) {
+        var p = this.players[this.player_order[i]];
+        players.push({
+            name: p.name,
+            handsize: p.hand.length,
+            lives: p.lives
+        });
+    }
+    players[this.active_index].active = true;
+    return {
+        players: players,
+        timer: this.bomb_timer,
+        hand: this.players[player].hand
+    }
+}
+
 module.exports = Game();
