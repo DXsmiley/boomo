@@ -8,5 +8,9 @@ html(lang="en")
                 h1 Play Boom-O!
                 p
                     span(class="roomy") Name:
-                    input(type="text", id="name-input")
+                    input(type="text", id="name-input", maxlength="20")
                 p(class="subtle") Alpha-numeric characters only
+                p(class="subtle") Maximum 20 characters
+    script(src="/static/jquery-3.1.0.min.js")
+    script(src="/static/js.cookie.js")
+    script(src="/static/namechange.js")
