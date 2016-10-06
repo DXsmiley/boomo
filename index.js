@@ -3,7 +3,7 @@ var pug = require('pug');
 var app = express();
 var server = require('http').Server(app);
 var io = require('socket.io')(server);
-var uuid = require('uuid');
+// var uuid = require('uuid');
 var Game = require('./game.js');
 
 app.use('/static', express.static(__dirname + '/static/'));
@@ -25,19 +25,30 @@ var thegame = new Game();
 var usernames = {};
 
 io.on('connection', function(socket) {
-    console.log('Someone connected via socket.io');
 
+    console.log('Someone connected via socket.io');
 
     socket.on('playcard', function(data) {
         console.log('Player tried to play card:', data);
-        // Wow, a stub!
+        thegame.playCard(data.player_id, data.card);
+        socket.emit('gamestate', thegame.getPlayerVision(data.player_id));
     });
 
     socket.on('say name', function(data) {
+        console.log('Player registered:', data.name, data.uuid);
         usernames[data.uuid] = data.name;
+        thegame.addPlayer(data.uuid, data.name);
     });
 
-    socket.emit('ask name', uuid.v4());
+    socket.on('deal', function() {
+        thegame.deal();
+    });
+
+    socket.on('ask state', function(player_id) {
+        socket.emit('gamestate', thegame.getPlayerVision(player_id));
+    });
+
+    socket.emit('ask name');
     // socket.emit('gamestate', );
 
 });

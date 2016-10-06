@@ -83,3 +83,9 @@ span.massive {
     color: #1796b8;
     margin: 40px;
 }
+
+.fixed-topleft {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+}
