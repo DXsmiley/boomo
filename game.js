@@ -66,7 +66,7 @@ Game.prototype.nextPlayerInCycle = function() {
         next = next + this.play_direction;
         if (next == -1) next = this.player_order.length - 1;
         if (next == this.player_order.length) next = 0;
-    } while (this.players[this.player_order[next]].lives == 0);
+    } while (false || this.players[this.player_order[next]].lives == 0); // XXX: Change when lives are implemented
     return this.players[this.player_order[next]];
 }
 
@@ -99,30 +99,34 @@ Game.prototype.advanceActivePlayer = function() {
 }
 
 Game.prototype.playCard = function(player, card) {
-    var hand = this.players[player].hand;
-    if (hand.includes(card)) {
-        hand.splice(hand.indexOf(card), 1);
-        this.discard.push(card);
-        if (card == '5') this.bomb_timer += 5;
-        if (card == '10') this.bomb_timer += 10;
-        if (card == 'set0') this.bomb_timer = 0;
-        if (card == 'set30') this.bomb_timer = 30;
-        if (card == 'set60') this.bomb_timer = 60;
-        if (card == 'skip') this.nextPlayerInCycle().turns_to_take -= 1;
-        if (card == 'reverse') this.play_direction *= -1;
-        if (this.bomb_timer > 60) {
-            this.playerLooseLife(player);
-            this.bomb_timer = 0;
-        }
-        if (hand.length == 0) {
-            for (var p in this.players) {
-                if (p != player) this.playerLooseLife(p);
-            }
-        }
-        this.advanceActivePlayer();
-        this.stamp++;
+    if (this.player_order[this.active_index] != player) {
+        console.log('Player tried to play out of turn');
     } else {
-        console.warn('A player tried to play a card they did not have');
+        var hand = this.players[player].hand;
+        if (hand.includes(card)) {
+            hand.splice(hand.indexOf(card), 1);
+            this.discard.push(card);
+            if (card == '5') this.bomb_timer += 5;
+            if (card == '10') this.bomb_timer += 10;
+            if (card == 'set0') this.bomb_timer = 0;
+            if (card == 'set30') this.bomb_timer = 30;
+            if (card == 'set60') this.bomb_timer = 60;
+            if (card == 'skip') this.nextPlayerInCycle().turns_to_take -= 1;
+            if (card == 'reverse') this.play_direction *= -1;
+            if (this.bomb_timer > 60) {
+                this.playerLooseLife(player);
+                this.bomb_timer = 0;
+            }
+            if (hand.length == 0) {
+                for (var p in this.players) {
+                    if (p != player) this.playerLooseLife(p);
+                }
+            }
+            this.advanceActivePlayer();
+            this.stamp++;
+        } else {
+            console.warn('A player tried to play a card they did not have');
+        }
     }
 };
 
