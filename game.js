@@ -6,14 +6,14 @@ const CARD_NUMBERS = {
     '5': 10,      // incrases timer by 5
     '10': 15,     // increases timer by 10
     'swap': 0,    // swap cards with another player
-    '+1': 0,      // everyone draws one card
-    '+2': 0,      // everyone draws two cards
+    'draw1': 4,      // everyone draws one card
+    'draw2': 2,      // everyone draws two cards
     'defuse': 0, // used to counter a boomo
     'boomo': 0,   // makes everyone explode
-    'set0': 4,    // set the couter to 1
+    'set0': 3,    // set the couter to 1
     'set60': 2,   // set the counter to 2
     'set30': 4,   // set the counter to 2
-    'skip': 4,    // skip the next player
+    'skip': 6,    // skip the next player
     'reverse': 4, // reverse the play order
     'play2': 0    // next player players 2 cards
 };
@@ -98,18 +98,28 @@ Game.prototype.playerDrawCards = function(player, number) {
 }
 
 Game.prototype.advanceActivePlayer = function() {
-    var next = this.active_index + this.play_direction;
-    if (next == -1) next = this.player_order.length - 1;
-    if (next == this.player_order.length) next = 0;
-    this.active_index = next;
-    var p = this.players[this.player_order[next]];
-    if (p.lives == 0) {
-        // XXX: This needs to be put back in when lives are properly implemented.
-        // this.advanceActivePlayer();
-    } else {
-        if (p.turns_to_take < 0) {
-            p.turns_to_take += 1;
+    if (this.alive_count > 1) {
+        var next = this.active_index + this.play_direction;
+        if (next == -1) next = this.player_order.length - 1;
+        if (next == this.player_order.length) next = 0;
+        this.active_index = next;
+        var p = this.players[this.player_order[next]];
+        if (p.lives == 0) {
+            // XXX: This needs to be put back in when lives are properly implemented.
             this.advanceActivePlayer();
+        } else {
+            if (p.turns_to_take < 0) {
+                p.turns_to_take += 1;
+                this.advanceActivePlayer();
+            }
+        }
+    }
+}
+
+Game.prototype.allDraw = function(number, exclude) {
+    for (var p in this.players) {
+        if (this.players[p].lives > 0 && p != exclude) {
+            this.playerDrawCards(p, number);
         }
     }
 }
@@ -130,6 +140,8 @@ Game.prototype.playCard = function(player, card) {
                 if (card == 'set30') this.bomb_timer = 30;
                 if (card == 'set60') this.bomb_timer = 60;
                 if (card == 'skip') this.nextPlayerInCycle().turns_to_take -= 1;
+                if (card == 'draw1') this.allDraw(1, player);
+                if (card == 'draw2') this.allDraw(2, player);
                 if (card == 'reverse') this.play_direction *= -1;
                 if (this.bomb_timer > 60) {
                     console.log(player, 'losy life');
