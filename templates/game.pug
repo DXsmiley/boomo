@@ -11,8 +11,9 @@ html(lang="en")
             div(class="center")
                 p
                     span(class="massive", id="bomb-timer") 0
-                    img(src="/static/images/cardback.png", id="discard-pile")
-            div(class="mycards", id="my-cards")
+                    //- img(src="/static/images/cardback.png", id="discard-pile")
+            div(class="mycards-wrapper")
+                div(class="mycards", id="my-cards")
     script(src="/static/jquery-3.1.0.min.js")
     script(src="/static/js.cookie.js")
     script(src="/socket.io/socket.io.js")

@@ -27,6 +27,14 @@ div.center {
     background-color: #15f698;
 }
 
+.red {
+    background-color: #e86042;
+}
+
+.grey {
+    background-color: lightgrey;
+}
+
 h1, h1, h2, h3, h4, h5, h6, p {
     font-family: sans-serif;
 }
@@ -48,23 +56,31 @@ p.subtle {
     padding: 6px;
 }
 
-div.mycards {
+div.mycards-wrapper {
     position: absolute;
     bottom: 0px;
+    width: 100vw;
+    /*height: 100vh;*/
+    overflow: hidden;
+}
+
+div.mycards {
+    position: relative;
+    bottom: 0px;
     margin: 0px auto;
-    left: 50%;
-    transform: translateX(-50%);
+    text-align: center;
 }
 
 div.mycards img {
     position: relative;
     margin: 0px -30px;
-    bottom: 0px;
+    bottom: -50px;
     transition: bottom 0.1s ease-out;
+    /*transform: scale(0.8);*/
 }
 
 div.mycards img:hover {
-    bottom: 50px;
+    bottom: 0px;
 }
 
 div.other-players {

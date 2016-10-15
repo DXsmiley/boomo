@@ -22,7 +22,9 @@ function populatePage(data) {
                 ce('p').text(data.players[p].lives + ' lives'),
                 ce('p').text(data.players[p].handsize + ' cards')
             );
-            if (data.players[p].active === true) d.addClass('green');
+            if (data.players[p].connected === false) d.addClass('red');
+            else if (data.players[p].lives === 0) d.addClass('grey');
+            else if (data.players[p].active === true) d.addClass('green');
             // console.log(d);
             $('#other-players').append(d);
         }

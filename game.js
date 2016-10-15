@@ -23,7 +23,8 @@ const TOTAL_CARDS = Object.keys(CARD_NUMBERS).reduce((sum, key) => sum + CARD_NU
 function makeCardListing(cards) {
     var ar = [];
     for (var c in CARD_NUMBERS) {
-        for (var i = 0; i < CARD_NUMBERS[c]; i++) {
+        // multiply the number becayse we don't want the deck to run out.
+        for (var i = 0; i < CARD_NUMBERS[c] * 4; i++) {
             ar.push(c);
         }
     }
@@ -41,6 +42,7 @@ function Game() {
     this.play_direction = 1;
     this.bomb_timer = 0;
     this.stamp = 0;
+    this.alive_count = 0;
 };
 
 Game.prototype.addPlayer = function(id, name) {
@@ -51,14 +53,23 @@ Game.prototype.addPlayer = function(id, name) {
             hand: [],
             lives: 0,
             turns_to_take: 0,
-            active: true
+            active: true,
+            connected: true
         };
         console.log('The player goined the game.')
     } else {
         console.log('The player re-joined the game.');
+        this.players[id].connected = true;
     }
     this.stamp++;
 };
+
+Game.prototype.disconnectPlayer = function(id, name) {
+    if (this.players[id] !== undefined) {
+        this.players[id].connected = false;
+        this.stamp++;
+    }
+}
 
 Game.prototype.nextPlayerInCycle = function() {
     var next = this.active_index;
@@ -66,13 +77,17 @@ Game.prototype.nextPlayerInCycle = function() {
         next = next + this.play_direction;
         if (next == -1) next = this.player_order.length - 1;
         if (next == this.player_order.length) next = 0;
-    } while (false || this.players[this.player_order[next]].lives == 0); // XXX: Change when lives are implemented
+    } while (this.alive_count > 1 && this.players[this.player_order[next]].lives == 0); // XXX: Change when lives are implemented
     return this.players[this.player_order[next]];
 }
 
-Game.prototype.playerLooseLife = function(player, card) {
-    if (player.lives > 0) {
-        player.lives -= 1;
+// TODO: Change this to take the player ID, not the player object.
+Game.prototype.playerLooseLife = function(player) {
+    if (this.players[player].lives > 0) {
+        this.players[player].lives -= 1;
+        if (this.players[player].lives == 0) {
+            this.alive_count -= 1;
+        }
     }
 }
 
@@ -86,6 +101,7 @@ Game.prototype.advanceActivePlayer = function() {
     var next = this.active_index + this.play_direction;
     if (next == -1) next = this.player_order.length - 1;
     if (next == this.player_order.length) next = 0;
+    this.active_index = next;
     var p = this.players[this.player_order[next]];
     if (p.lives == 0) {
         // XXX: This needs to be put back in when lives are properly implemented.
@@ -99,46 +115,61 @@ Game.prototype.advanceActivePlayer = function() {
 }
 
 Game.prototype.playCard = function(player, card) {
-    if (this.player_order[this.active_index] != player) {
-        console.log('Player tried to play out of turn');
-    } else {
-        var hand = this.players[player].hand;
-        if (hand.includes(card)) {
-            hand.splice(hand.indexOf(card), 1);
-            this.discard.push(card);
-            if (card == '5') this.bomb_timer += 5;
-            if (card == '10') this.bomb_timer += 10;
-            if (card == 'set0') this.bomb_timer = 0;
-            if (card == 'set30') this.bomb_timer = 30;
-            if (card == 'set60') this.bomb_timer = 60;
-            if (card == 'skip') this.nextPlayerInCycle().turns_to_take -= 1;
-            if (card == 'reverse') this.play_direction *= -1;
-            if (this.bomb_timer > 60) {
-                this.playerLooseLife(player);
-                this.bomb_timer = 0;
-            }
-            if (hand.length == 0) {
-                for (var p in this.players) {
-                    if (p != player) this.playerLooseLife(p);
-                }
-            }
-            this.advanceActivePlayer();
-            this.stamp++;
+    // console.log(player, this.player_order);
+    if (this.alive_count > 1) {
+        if (this.player_order[this.active_index] != player) {
+            console.log('Player tried to play out of turn');
         } else {
-            console.warn('A player tried to play a card they did not have');
+            var hand = this.players[player].hand;
+            if (hand.includes(card)) {
+                hand.splice(hand.indexOf(card), 1);
+                this.discard.push(card);
+                if (card == '5') this.bomb_timer += 5;
+                if (card == '10') this.bomb_timer += 10;
+                if (card == 'set0') this.bomb_timer = 0;
+                if (card == 'set30') this.bomb_timer = 30;
+                if (card == 'set60') this.bomb_timer = 60;
+                if (card == 'skip') this.nextPlayerInCycle().turns_to_take -= 1;
+                if (card == 'reverse') this.play_direction *= -1;
+                if (this.bomb_timer > 60) {
+                    console.log(player, 'losy life');
+                    this.playerLooseLife(player);
+                    this.bomb_timer = 0;
+                }
+                if (hand.length == 0) {
+                    for (var p in this.players) {
+                        if (p != player) this.playerLooseLife(p);
+                    }
+                    this.playerDrawCards(player, 7);
+                }
+                this.advanceActivePlayer();
+                this.stamp++;
+            } else {
+                console.warn('A player tried to play a card they did not have');
+            }
         }
     }
 };
 
 Game.prototype.deal = function() {
     this.deck = shuffle(CARD_LISTING.slice(), {copy: true});
-    for (var p in this.players) {
-        console.log(p, this.players[p]);
-        if (this.players[p].active) {
-            this.players[p].hand = [];
-            this.playerDrawCards(p, 7);
+    this.player_order = [];
+    this.alive_count = 0;
+    for (var i in this.players) {
+        var p = this.players[i];
+        if (p.connected) {
+            console.log(i, this.players[p]);
+            if (p.active) {
+                p.hand = [];
+                this.playerDrawCards(i, 7);
+            }
+            p.lives = 3;
+            p.turns_to_take = 0;
+            this.alive_count++;
+            this.player_order.push(i);
         }
     }
+    this.active_index = 0;
     this.stamp++;
 }
 
@@ -157,15 +188,16 @@ Game.prototype.getPlayerVision = function(player) {
             players.push({
                 name: p.name,
                 handsize: p.hand.length,
-                lives: p.lives
+                lives: p.lives,
+                connected: p.connected
             });
         }
-        console.log(players);
+        // console.log(players);
         players[this.active_index].active = true;
         return {
             players: players,
             timer: this.bomb_timer,
-            hand: this.players[player].hand,
+            hand: this.players[player] === undefined ? [] : this.players[player].hand,
             stamp: this.stamp
         }
     }

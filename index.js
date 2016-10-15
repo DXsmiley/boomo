@@ -28,15 +28,20 @@ io.on('connection', function(socket) {
 
     console.log('Someone connected via socket.io');
 
+    let player_id = undefined;
+    let player_name = undefined;
+
     socket.on('playcard', function(data) {
-        console.log('Player tried to play card:', data);
-        thegame.playCard(data.player_id, data.card);
-        socket.emit('gamestate', thegame.getPlayerVision(data.player_id));
+        // console.log('Player tried to play card:', data);
+        thegame.playCard(player_id, data.card);
+        socket.emit('gamestate', thegame.getPlayerVision(player_id));
     });
 
     socket.on('say name', function(data) {
         console.log('Player registered:', data.name, data.uuid);
         usernames[data.uuid] = data.name;
+        player_name = data.name;
+        player_id = data.uuid;
         thegame.addPlayer(data.uuid, data.name);
     });
 
@@ -46,6 +51,10 @@ io.on('connection', function(socket) {
 
     socket.on('ask state', function(player_id) {
         socket.emit('gamestate', thegame.getPlayerVision(player_id));
+    });
+
+    socket.on('disconnect', function() {
+        thegame.disconnectPlayer(player_id);
     });
 
     socket.emit('ask name');
