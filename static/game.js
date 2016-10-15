@@ -43,6 +43,7 @@ function populatePage(data) {
             $('#my-cards').append(img);
         }
         $('#bomb-timer').text(data.timer);
+        $('#discard-pile').attr('src', '/static/images/card_' + data.discard + '.png');
     }
 }
 

@@ -43,6 +43,7 @@ function Game() {
     this.bomb_timer = 0;
     this.stamp = 0;
     this.alive_count = 0;
+    this.last_played = 'boomo';
 };
 
 Game.prototype.addPlayer = function(id, name) {
@@ -138,6 +139,7 @@ Game.prototype.playCard = function(player, card) {
             if (hand.includes(card)) {
                 hand.splice(hand.indexOf(card), 1);
                 this.discard.push(card);
+                this.last_played = card;
                 if (card == '5') this.bomb_timer += 5;
                 if (card == '10') this.bomb_timer += 10;
                 if (card == 'set0') this.bomb_timer = 0;
@@ -153,7 +155,7 @@ Game.prototype.playCard = function(player, card) {
                         if (p != player) {
                             var h = this.players[p].hand;
                             if (h.includes('defuse')) {
-                                h.splice(h.inexOf('defuse'), 1);
+                                h.splice(h.indexOf('defuse'), 1);
                             } else {
                                 num_hits += 1;
                                 this.playerLooseLife(p);
@@ -235,7 +237,8 @@ Game.prototype.getPlayerVision = function(player) {
             players: players,
             timer: this.bomb_timer,
             hand: this.players[player] === undefined ? [] : this.players[player].hand,
-            stamp: this.stamp
+            stamp: this.stamp,
+            discard: this.last_played
         }
     }
 }
