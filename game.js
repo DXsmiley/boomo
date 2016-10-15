@@ -152,7 +152,7 @@ Game.prototype.playCard = function(player, card) {
                 if (card == 'boomo') {
                     var num_hits = 0;
                     for (var p in this.players) {
-                        if (p != player) {
+                        if (p.lives > 0 && p != player) {
                             var h = this.players[p].hand;
                             if (h.includes('defuse')) {
                                 h.splice(h.indexOf('defuse'), 1);
