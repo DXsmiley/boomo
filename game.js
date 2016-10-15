@@ -6,10 +6,10 @@ const CARD_NUMBERS = {
     '5': 10,      // incrases timer by 5
     '10': 15,     // increases timer by 10
     'swap': 0,    // swap cards with another player
-    'draw1': 4,      // everyone draws one card
-    'draw2': 2,      // everyone draws two cards
-    'defuse': 0, // used to counter a boomo
-    'boomo': 0,   // makes everyone explode
+    'draw1': 3,      // everyone draws one card
+    'draw2': 1,      // everyone draws two cards
+    'defuse': 6, // used to counter a boomo
+    'boomo': 1,   // makes everyone explode
     'set0': 3,    // set the couter to 1
     'set60': 2,   // set the counter to 2
     'set30': 4,   // set the counter to 2
@@ -124,6 +124,10 @@ Game.prototype.allDraw = function(number, exclude) {
     }
 }
 
+Game.prototype.checkHandOut = function(player) {
+
+}
+
 Game.prototype.playCard = function(player, card) {
     // console.log(player, this.player_order);
     if (this.alive_count > 1) {
@@ -143,16 +147,36 @@ Game.prototype.playCard = function(player, card) {
                 if (card == 'draw1') this.allDraw(1, player);
                 if (card == 'draw2') this.allDraw(2, player);
                 if (card == 'reverse') this.play_direction *= -1;
+                if (card == 'boomo') {
+                    var num_hits = 0;
+                    for (var p in this.players) {
+                        if (p != player) {
+                            var h = this.players[p].hand;
+                            if (h.includes('defuse')) {
+                                h.splice(h.inexOf('defuse'), 1);
+                            } else {
+                                num_hits += 1;
+                                this.playerLooseLife(p);
+                            }
+                        }
+                    }
+                    if (num_hits == 0) {
+                        this.playerLooseLife(player);
+                    }
+                    this.bomb_timer = 0;
+                }
                 if (this.bomb_timer > 60) {
                     console.log(player, 'losy life');
                     this.playerLooseLife(player);
                     this.bomb_timer = 0;
                 }
-                if (hand.length == 0) {
-                    for (var p in this.players) {
-                        if (p != player) this.playerLooseLife(p);
+                for (var i in this.players) {
+                    if (this.players[i].hand.length == 0) {
+                        for (var p in this.players) {
+                            if (p != i) this.playerLooseLife(p);
+                        }
+                        this.playerDrawCards(player, 7);
                     }
-                    this.playerDrawCards(player, 7);
                 }
                 this.advanceActivePlayer();
                 this.stamp++;
@@ -181,6 +205,7 @@ Game.prototype.deal = function() {
             this.player_order.push(i);
         }
     }
+    this.bomb_timer = 0;
     this.active_index = 0;
     this.stamp++;
 }

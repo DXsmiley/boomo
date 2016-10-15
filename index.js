@@ -46,6 +46,7 @@ io.on('connection', function(socket) {
     });
 
     socket.on('deal', function() {
+        console.log(player_name, 'redealt');
         thegame.deal();
     });
 
