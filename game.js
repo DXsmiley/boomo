@@ -15,7 +15,22 @@ const CARD_NUMBERS = {
     'set30': 4,   // set the counter to 2
     'skip': 6,    // skip the next player
     'reverse': 4, // reverse the play order
-    'play2': 8    // next player players 2 cards
+    'play2': 4    // next player players 2 cards
+};
+
+const CARD_CHANGES_NUMBER = {
+    '5': true,
+    '10': true,
+    'draw1': false,
+    'draw2': false,
+    'defuse': false,
+    'boomo': false,
+    'set0': true,
+    'set60': true,
+    'set30': true,
+    'skip': false,
+    'reverse': false,
+    'play2': false
 };
 
 const TOTAL_CARDS = Object.keys(CARD_NUMBERS).reduce((sum, key) => sum + CARD_NUMBERS[key]);
@@ -133,6 +148,14 @@ Game.prototype.checkHandOut = function(player) {
 
 }
 
+Game.prototype.playerHasCardWhichChangesNumber = function(player) {
+    var result = false;
+    for (var c of this.players[player].hand) {
+        result = result || CARD_CHANGES_NUMBER[c];
+    }
+    return result;
+};
+
 Game.prototype.playCard = function(player, card) {
     // console.log(player, this.player_order);
     if (this.alive_count > 1) {
@@ -140,7 +163,7 @@ Game.prototype.playCard = function(player, card) {
             console.log('Player tried to play out of turn');
         } else {
             var hand = this.players[player].hand;
-            if (hand.includes(card)) {
+            if (hand.includes(card) && (this.players[player].turns_to_take == 0 || CARD_CHANGES_NUMBER[card])) {
                 hand.splice(hand.indexOf(card), 1);
                 this.discard.push(card);
                 this.last_played = card;
@@ -154,8 +177,12 @@ Game.prototype.playCard = function(player, card) {
                     this.players[this.player_order[next]].turns_to_take -= 1;
                 }
                 if (card == 'play2') {
-                    var next = this.nextPlayerInCycle();
-                    this.players[this.player_order[next]].turns_to_take += 1;
+                    var next = this.player_order[this.nextPlayerInCycle()];
+                    if (this.playerHasCardWhichChangesNumber(next)) {
+                        this.players[next].turns_to_take += 1;
+                    } else {
+                        this.playerLooseLife(next);
+                    }
                 }
                 if (card == 'draw1') this.allDraw(1, player);
                 if (card == 'draw2') this.allDraw(2, player);
@@ -194,7 +221,7 @@ Game.prototype.playCard = function(player, card) {
                 this.advanceActivePlayer();
                 this.stamp++;
             } else {
-                console.warn('A player tried to play a card they did not have');
+                console.warn('A player tried to play a card they were not allowed to.');
             }
         }
     }
