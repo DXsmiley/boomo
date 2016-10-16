@@ -79,6 +79,7 @@ Game.prototype.addPlayer = function(id, name) {
     } else {
         console.log('The player re-joined the game.');
         this.players[id].connected = true;
+        this.players[id].name = name;
     }
     this.stamp++;
 };
