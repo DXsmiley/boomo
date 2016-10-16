@@ -105,3 +105,7 @@ span.massive {
     top: 10px;
     left: 10px;
 }
+
+.blur {
+    filter: sepia(1);
+}

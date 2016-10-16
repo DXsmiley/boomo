@@ -271,12 +271,16 @@ Game.prototype.getPlayerVision = function(player) {
         }
         // console.log(players);
         players[this.active_index].active = true;
+        var blur = false;
+        if (this.players[player] !== undefined)
+            blur = this.players[player].lives > 0 && this.players[player].turns_to_take > 0;
         return {
             players: players,
             timer: this.bomb_timer,
             hand: this.players[player] === undefined ? [] : this.players[player].hand,
             stamp: this.stamp,
-            discard: this.last_played
+            discard: this.last_played,
+            blur_non_numbers: blur
         }
     }
 }

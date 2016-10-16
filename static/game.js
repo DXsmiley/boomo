@@ -10,6 +10,21 @@ function ce(type) {
 
 var last_update = undefined;
 
+const CARD_CHANGES_NUMBER = {
+    '5': true,
+    '10': true,
+    'draw1': false,
+    'draw2': false,
+    'defuse': false,
+    'boomo': false,
+    'set0': true,
+    'set60': true,
+    'set30': true,
+    'skip': false,
+    'reverse': false,
+    'play2': false
+};
+
 function populatePage(data) {
     if (data.stamp != last_update) {
         last_update = data.stamp;
@@ -36,6 +51,7 @@ function populatePage(data) {
             var img = ce('img');
             // TODO: Proper card images.
             img.attr('src', '/static/images/card_' + name + '.png');
+            if (data.blur_non_numbers && !CARD_CHANGES_NUMBER[name]) img.addClass('blur');
             img.on('click', function() {
                 console.log('Playing card:', name);
                 socket.emit('playcard', {player_id: player_id, card: name});
@@ -76,7 +92,7 @@ socket.on('connect', function() {
 });
 
 socket.on('gamestate', function(data) {
-    console.log('Got game state from server', data);
+    // console.log('Got game state from server', data);
     populatePage(data);
 });
 
