@@ -23,8 +23,7 @@ const TOTAL_CARDS = Object.keys(CARD_NUMBERS).reduce((sum, key) => sum + CARD_NU
 function makeCardListing(cards) {
     var ar = [];
     for (var c in CARD_NUMBERS) {
-        // multiply the number becayse we don't want the deck to run out.
-        for (var i = 0; i < CARD_NUMBERS[c] * 4; i++) {
+        for (var i = 0; i < CARD_NUMBERS[c]; i++) {
             ar.push(c);
         }
     }
@@ -32,6 +31,10 @@ function makeCardListing(cards) {
 }
 
 const CARD_LISTING = makeCardListing(CARD_NUMBERS);
+
+function newDeck() {
+    return shuffle(CARD_LISTING.slice(), {copy: true});
+}
 
 function Game() {
     this.player_order = [];
@@ -94,6 +97,7 @@ Game.prototype.playerLooseLife = function(player) {
 
 Game.prototype.playerDrawCards = function(player, number) {
     for (var i = 0; i < number; i++) {
+        if (this.deck.length == 0) this.deck = newDeck();
         this.players[player].hand.push(this.deck.pop());
     }
 }
@@ -190,7 +194,7 @@ Game.prototype.playCard = function(player, card) {
 };
 
 Game.prototype.deal = function() {
-    this.deck = shuffle(CARD_LISTING.slice(), {copy: true});
+    this.deck = newDeck();
     this.player_order = [];
     this.alive_count = 0;
     for (var i in this.players) {
