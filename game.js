@@ -217,7 +217,7 @@ Game.prototype.playCard = function(player, card) {
                         for (var p in this.players) {
                             if (p != i) this.playerLooseLife(p);
                         }
-                        this.playerDrawCards(player, 7);
+                        this.playerDrawCards(i, 7);
                     }
                 }
                 this.advanceActivePlayer();
