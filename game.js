@@ -115,6 +115,7 @@ Game.prototype.playerDrawCards = function(player, number) {
         if (this.deck.length == 0) this.deck = newDeck();
         this.players[player].hand.push(this.deck.pop());
     }
+    this.players[player].hand.sort();
 }
 
 Game.prototype.advanceActivePlayer = function() {
