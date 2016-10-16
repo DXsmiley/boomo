@@ -81,7 +81,7 @@ Game.prototype.nextPlayerInCycle = function() {
         next = next + this.play_direction;
         if (next == -1) next = this.player_order.length - 1;
         if (next == this.player_order.length) next = 0;
-    } while (this.alive_count > 1 && this.players[this.player_order[next]].lives == 0); // XXX: Change when lives are implemented
+    } while (this.alive_count > 1 && this.players[this.player_order[next]].lives == 0);
     return this.players[this.player_order[next]];
 }
 
