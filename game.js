@@ -1,5 +1,8 @@
 var shuffle = require('shuffle-array');
 
+var Player = require('./player');
+var nwrap = require('./nwrap');
+
 // This is a single game instance, which holds information about the state of a game.
 
 const CARD_NUMBERS = {
@@ -52,85 +55,84 @@ function newDeck() {
 }
 
 function Game() {
-    this.player_order = [];
-    this.players = {};
+    // Use an actual map so iteration is nice.
+    this.players = new Map();
     this.deck = [];
     this.discard = [];
-    this.active_index = 0;
+    this.active_player = undefined;
     this.play_direction = 1;
     this.bomb_timer = 0;
     this.stamp = 0;
     this.alive_count = 0;
     this.last_played = 'boomo';
+    this.first_player = undefined;
 };
 
 Game.prototype.addPlayer = function(id, name) {
-    if (this.players[id] === undefined) {
-        this.player_order.push(id);
-        this.players[id] = {
-            name: name,
-            hand: [],
-            lives: 0,
-            turns_to_take: 0,
-            active: true,
-            connected: true
-        };
-        console.log('The player goined the game.')
+    if (this.players.get(id) === undefined) {
+        // this.player_order.push(id);
+        this.players.set(id, new Player(id, name));
+        console.log('Player', name, 'joined the game.')
     } else {
         console.log('The player re-joined the game.');
-        this.players[id].connected = true;
-        this.players[id].name = name;
+        this.players.get(id).connected = true;
+        this.players.get(id).name = name;
     }
     this.stamp++;
 };
 
-Game.prototype.disconnectPlayer = function(id, name) {
-    if (this.players[id] !== undefined) {
-        this.players[id].connected = false;
-        this.stamp++;
-    }
+Game.prototype.getPlayer = function(object, def) {
+    if (!(object instanceof Player)) object = this.players.get(object);
+    if (object === undefined) object = def;
+    return object;
+};
+
+Game.prototype.disconnectPlayer = function(id) {
+    this.getPlayer(id, {}).connected = false;
+    this.stamp++;
 }
 
+// Game.prototype.playerOrderd = function(index) {
+//     return this.players[this.player_order[index]];
+// }
+
 Game.prototype.nextPlayerInCycle = function() {
-    var next = this.active_index;
+    var next = this.active_player;
     do {
-        next = next + this.play_direction;
-        if (next == -1) next = this.player_order.length - 1;
-        if (next == this.player_order.length) next = 0;
-    } while (this.alive_count > 1 && this.players[this.player_order[next]].lives == 0);
+        next = this.active_player.order.next;
+    } while (this.alive_count > 1 && next.lives == 0);
     return next;
 }
 
-// TODO: Change this to take the player ID, not the player object.
 Game.prototype.playerLooseLife = function(player) {
-    if (this.players[player].lives > 0) {
-        this.players[player].lives -= 1;
-        if (this.players[player].lives == 0) {
+    player = this.getPlayer(player);
+    if (player.lives > 0) {
+        player.lives -= 1;
+        if (player.lives == 0) {
             this.alive_count -= 1;
         }
     }
 }
 
 Game.prototype.playerDrawCards = function(player, number) {
+    player = this.getPlayer(player);
     for (var i = 0; i < number; i++) {
         if (this.deck.length == 0) this.deck = newDeck();
-        this.players[player].hand.push(this.deck.pop());
+        player.hand.push(this.deck.pop());
     }
-    this.players[player].hand.sort();
+    player.hand.sort();
 }
 
 Game.prototype.advanceActivePlayer = function() {
     if (this.alive_count > 1) {
-        var cur = this.players[this.player_order[this.active_index]];
-        if (cur.lives > 0 && cur.turns_to_take > 0) {
-            cur.turns_to_take -= 1;
+        if (this.active_player.lives > 0 && this.active_player.turns_to_take > 0) {
+            this.active_player.turns_to_take -= 1;
         } else {
             do {
-                this.active_index = this.nextPlayerInCycle();
-                cur = this.players[this.player_order[this.active_index]];
-                if (cur.lives > 0) {
-                    if (cur.turns_to_take < 0) {
-                        cur.turns_to_take += 1;
+                this.active_player = this.active_player.order.next;
+                if (this.active_player.lives > 0) {
+                    if (this.active_player.turns_to_take < 0) {
+                        this.active_player.turns_to_take += 1;
                     } else break;
                 }
             } while (true);
@@ -139,20 +141,16 @@ Game.prototype.advanceActivePlayer = function() {
 }
 
 Game.prototype.allDraw = function(number, exclude) {
-    for (var p in this.players) {
-        if (this.players[p].lives > 0 && p != exclude) {
+    for (var p of this.players.values()) {
+        if (p.lives > 0 && p != this.getPlayer(exclude)) {
             this.playerDrawCards(p, number);
         }
     }
 }
 
-Game.prototype.checkHandOut = function(player) {
-
-}
-
 Game.prototype.playerHasCardWhichChangesNumber = function(player) {
     var result = false;
-    for (var c of this.players[player].hand) {
+    for (var c of this.getPlayer(player).hand) {
         result = result || CARD_CHANGES_NUMBER[c];
     }
     return result;
@@ -160,13 +158,13 @@ Game.prototype.playerHasCardWhichChangesNumber = function(player) {
 
 Game.prototype.playCard = function(player, card) {
     // console.log(player, this.player_order);
+    var player = this.getPlayer(player);
     if (this.alive_count > 1) {
-        if (this.player_order[this.active_index] != player) {
-            console.log('Player tried to play out of turn');
+        if (player != this.active_player) {
+            console.log(player.name, 'tried to play out of turn');
         } else {
-            var hand = this.players[player].hand;
-            if (hand.includes(card) && (this.players[player].turns_to_take == 0 || CARD_CHANGES_NUMBER[card])) {
-                hand.splice(hand.indexOf(card), 1);
+            if (player.hand.includes(card) && (player.turns_to_take == 0 || CARD_CHANGES_NUMBER[card])) {
+                player.hand.splice(player.hand.indexOf(card), 1);
                 this.discard.push(card);
                 this.last_played = card;
                 if (card == '5') this.bomb_timer += 5;
@@ -175,13 +173,12 @@ Game.prototype.playCard = function(player, card) {
                 if (card == 'set30') this.bomb_timer = 30;
                 if (card == 'set60') this.bomb_timer = 60;
                 if (card == 'skip') {
-                    var next = this.nextPlayerInCycle();
-                    this.players[this.player_order[next]].turns_to_take -= 1;
+                    this.nextPlayerInCycle().turns_to_take -= 1;
                 }
                 if (card == 'play2') {
-                    var next = this.player_order[this.nextPlayerInCycle()];
+                    var next = this.nextPlayerInCycle();
                     if (this.playerHasCardWhichChangesNumber(next)) {
-                        this.players[next].turns_to_take += 1;
+                        next.turns_to_take += 1;
                     } else {
                         this.playerLooseLife(next);
                     }
@@ -191,9 +188,9 @@ Game.prototype.playCard = function(player, card) {
                 if (card == 'reverse') this.play_direction *= -1;
                 if (card == 'boomo') {
                     var num_hits = 0;
-                    for (var p in this.players) {
-                        if (this.players[p].lives > 0 && p != player) {
-                            var h = this.players[p].hand;
+                    for (var p of this.players.values()) {
+                        if (p.lives > 0 && p != player) {
+                            var h = p.hand;
                             if (h.includes('defuse')) {
                                 h.splice(h.indexOf('defuse'), 1);
                             } else {
@@ -208,22 +205,26 @@ Game.prototype.playCard = function(player, card) {
                     this.bomb_timer = 0;
                 }
                 if (this.bomb_timer > 60) {
-                    console.log(player, 'losy life');
+                    console.log(player.name, 'lost life');
                     this.playerLooseLife(player);
                     this.bomb_timer = 0;
                 }
-                for (var i in this.players) {
-                    if (this.players[i].hand.length == 0) {
-                        for (var p in this.players) {
+                for (var i of this.players.values()) {
+                    if (i.hand.length == 0) {
+                        for (var p of this.players.values()) {
                             if (p != i) this.playerLooseLife(p);
                         }
+                    }
+                }
+                for (var i of this.players.values()) {
+                    if (i.hand.length == 0 && i.lives > 0) {
                         this.playerDrawCards(i, 7);
                     }
                 }
                 this.advanceActivePlayer();
                 this.stamp++;
             } else {
-                console.warn('A player tried to play a card they were not allowed to.');
+                console.warn(player.name, 'tried to play a card they were not allowed to.');
             }
         }
     }
@@ -231,29 +232,58 @@ Game.prototype.playCard = function(player, card) {
 
 Game.prototype.deal = function() {
     this.deck = newDeck();
-    this.player_order = [];
-    this.alive_count = 0;
-    for (var i in this.players) {
-        var p = this.players[i];
+    player_order = [];
+    for (var p of this.players.values()) {
+        p.reset();
         if (p.connected) {
-            console.log(i, this.players[p]);
-            if (p.active) {
-                p.hand = [];
-                this.playerDrawCards(i, 7);
-            }
-            p.lives = 3;
-            p.turns_to_take = 0;
-            this.alive_count++;
-            this.player_order.push(i);
+            this.playerDrawCards(p, 7);
+            player_order.push(p);
+            p.in_game = true;
+        } else {
+            p.in_game = false;
         }
     }
+    shuffle(player_order);
+    const L = player_order.length;
+    // console.warn(L, player_order);
+    for (var i in player_order) {
+        i = parseInt(i);
+        // console.log(typeof i);
+        // console.log((i - 1 + L) % L, i, (i + 1) % L);
+        player_order[i].setOrder(
+            player_order[(i - 1 + L) % L],
+            player_order[(i + 1) % L]
+        );
+    }
+    // console.warn(player_order);
     this.bomb_timer = 0;
-    this.active_index = 0;
+    this.play_direction = 1;
+    this.active_player = player_order[0];
+    this.first_player = player_order[0];
+    this.alive_count = player_order.length;
     this.stamp++;
 }
 
+Game.prototype.playersOrdered = function() {
+    var order = [];
+    if (this.alive_count > 0) {
+        for (var i = this.first_player; i != this.first_player || order.length == 0; i = i.order.next) {
+            if (i.lives > 0) {
+                order.push(i);
+            }
+        }
+    }
+    for (var p of this.players.values()) {
+        if ((p.connected || p.in_game) && order.indexOf(p) == -1) {
+            order.push(p);
+        }
+    }
+    return order;
+};
+
 Game.prototype.getPlayerVision = function(player) {
-    if (this.player_order.length == 0) {
+    player = this.getPlayer(player);
+    if (player === undefined) {
         return {
             players: [],
             timer: 0,
@@ -262,24 +292,20 @@ Game.prototype.getPlayerVision = function(player) {
         }
     } else {
         var players = [];
-        for (var i in this.player_order) {
-            var p = this.players[this.player_order[i]];
+        for (var p of this.playersOrdered()) {
             players.push({
                 name: p.name,
                 handsize: p.hand.length,
                 lives: p.lives,
-                connected: p.connected
+                connected: p.connected,
+                active: p == this.active_player
             });
         }
-        // console.log(players);
-        players[this.active_index].active = true;
-        var blur = false;
-        if (this.players[player] !== undefined)
-            blur = this.players[player].lives > 0 && this.players[player].turns_to_take > 0;
+        var blur = player.lives > 0 && player.turns_to_take > 0;
         return {
             players: players,
             timer: this.bomb_timer,
-            hand: this.players[player] === undefined ? [] : this.players[player].hand,
+            hand: player.hand,
             stamp: this.stamp,
             discard: this.last_played,
             blur_non_numbers: blur

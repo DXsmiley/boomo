@@ -92,7 +92,7 @@ socket.on('connect', function() {
 });
 
 socket.on('gamestate', function(data) {
-    // console.log('Got game state from server', data);
+    console.log('Got game state from server', data);
     populatePage(data);
 });
 
