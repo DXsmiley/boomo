@@ -37,6 +37,12 @@ function populatePage(data) {
                 ce('p').text(data.players[p].lives + ' lives'),
                 ce('p').text(data.players[p].handsize + ' cards')
             );
+            for (var i = 0; i < 3 - data.players[p].lives; i ++) {
+              d.append(ce('img').attr('src', '/static/images/life_bad.png'));
+            }
+            for (var i = 0; i < data.players[p].lives; i ++) {
+              d.append(ce('img').attr('src', '/static/images/life_good.png'));
+            }
             if (data.players[p].connected === false) d.addClass('red');
             else if (data.players[p].lives === 0) d.addClass('grey');
             else if (data.players[p].active === true) d.addClass('green');
@@ -92,7 +98,7 @@ socket.on('connect', function() {
 });
 
 socket.on('gamestate', function(data) {
-    console.log('Got game state from server', data);
+    // console.log('Got game state from server', data);
     populatePage(data);
 });
 
