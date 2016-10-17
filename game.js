@@ -98,9 +98,14 @@ Game.prototype.disconnectPlayer = function(id) {
 
 Game.prototype.nextPlayerInCycle = function() {
     var next = this.active_player;
+    // var bail = 0;
     do {
-        next = this.active_player.order.next;
-    } while (this.alive_count > 1 && next.lives == 0);
+        console.log('stuck in nextPlayerInCycle', next);
+        if (this.play_direction == 1) next = next.order.next;
+        else next = next.order.prev;
+        // bail += 1;
+    } while (this.alive_count > 1 && next.lives == 0 /*&& bail < 100*/);
+    console.log('nope');
     return next;
 }
 
@@ -129,13 +134,16 @@ Game.prototype.advanceActivePlayer = function() {
             this.active_player.turns_to_take -= 1;
         } else {
             do {
-                this.active_player = this.active_player.order.next;
+                console.log('stuck in advanceActivePlayer');
+                if (this.play_direction == 1) this.active_player = this.active_player.order.next;
+                else this.active_player = this.active_player.order.prev;
                 if (this.active_player.lives > 0) {
                     if (this.active_player.turns_to_take < 0) {
                         this.active_player.turns_to_take += 1;
                     } else break;
                 }
             } while (true);
+            console.log('nope');
         }
     }
 }
@@ -205,12 +213,13 @@ Game.prototype.playCard = function(player, card) {
                     this.bomb_timer = 0;
                 }
                 if (this.bomb_timer > 60) {
-                    console.log(player.name, 'lost life');
+                    console.log(player.name, 'exceeded timer');
                     this.playerLooseLife(player);
                     this.bomb_timer = 0;
                 }
                 for (var i of this.players.values()) {
-                    if (i.hand.length == 0) {
+                    if (i.active && i.lives > 0 && i.hand.length == 0) {
+                        console.log(i.name, 'has no cards!');
                         for (var p of this.players.values()) {
                             if (p != i) this.playerLooseLife(p);
                         }
@@ -266,11 +275,13 @@ Game.prototype.deal = function() {
 
 Game.prototype.playersOrdered = function() {
     var order = [];
+    var limit = 0;
     if (this.alive_count > 0) {
-        for (var i = this.first_player; i != this.first_player || order.length == 0; i = i.order.next) {
+        for (var i = this.first_player; (i != this.first_player || order.length == 0) && limit < 1000; i = i.order.next) {
             if (i.lives > 0) {
                 order.push(i);
             }
+            limit += 1;
         }
     }
     for (var p of this.players.values()) {
