@@ -33,6 +33,7 @@ io.on('connection', function(socket) {
 
     socket.on('playcard', function(data) {
         // console.log('Player tried to play card:', data);
+        thegame.keepAwake(player_id);
         thegame.playCard(player_id, data.card);
         socket.emit('gamestate', thegame.getPlayerVision(player_id));
     });
@@ -51,6 +52,7 @@ io.on('connection', function(socket) {
     });
 
     socket.on('ask state', function(player_id) {
+        thegame.keepAwake(player_id);
         socket.emit('gamestate', thegame.getPlayerVision(player_id));
     });
 

@@ -81,6 +81,16 @@ Game.prototype.addPlayer = function(id, name) {
     this.stamp++;
 };
 
+Game.prototype.keepAwake = function(player) {
+    var player = this.getPlayer(player);
+    if (player !== undefined) {
+        if (player.connected == false) {
+            player.connected = true;
+            this.stamp++;
+        }
+    }
+};
+
 Game.prototype.getPlayer = function(object, def) {
     if (!(object instanceof Player)) object = this.players.get(object);
     if (object === undefined) object = def;
