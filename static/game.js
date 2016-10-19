@@ -34,8 +34,7 @@ function populatePage(data) {
             var d = ce('div', 'player-info');
             d.append(
                 ce('h1').text(data.players[p].name),
-                ce('p').text(data.players[p].lives + ' lives'),
-                ce('p').text(data.players[p].handsize + ' cards')
+                ce('p').text(data.players[p].lives + ' lives | ' + (data.players[p].handsize + ' cards'))
             );
             for (var i = 0; i < 3 - data.players[p].lives; i ++) {
               d.append(ce('img').attr('src', '/static/images/life_bad.png'));
